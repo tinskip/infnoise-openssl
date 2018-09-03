@@ -10,7 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#ifndef MIN
+#  define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 static const int kEngineOk = 1;
 static const int kEngineFail = 0;
@@ -26,8 +28,7 @@ static const char* kInfnoiseSerial = NULL;
 // Ring buffer implementation
 ////////////////////////////////
 
-static const size_t kRingBufferSize =
-    2 * BUFLEN; // So that we do not waste TRNG bytes.
+#define kRingBufferSize (2u * BUFLEN) // So that we do not waste TRNG bytes.
 
 typedef struct {
   uint8_t buffer[kRingBufferSize];
@@ -112,7 +113,7 @@ typedef struct {
 static int InfnoiseEngineStateInit(InfnoiseEngineState* engine_state) {
   memset(&engine_state->ftdic, 0, sizeof(engine_state->ftdic));
   RingBufferInit(&engine_state->ring_buffer);
-  char* message;
+  char* message = NULL;
   engine_state->status = initInfnoise(&engine_state->ftdic, kInfnoiseSerial,
                                       &message, false, false);
   if (engine_state->status != kEngineOk) {
@@ -135,8 +136,8 @@ static int Bytes(unsigned char* buf, int num) {
     if (num > 0) {
       // Need more TRNG bytes.
       uint8_t trng_buffer[BUFLEN];
-      char* message;
-      bool error_flag;
+      char* message = NULL;
+      bool error_flag = false;
       size_t trng_bytes;
       if (kInfnoiseMultiplier > 1) {
         trng_bytes = readData(&engine_state.ftdic, trng_buffer, &message,
