@@ -21,7 +21,7 @@ static const int kEngineFail = 0;
 // Configuration
 ///////////////////
 
-static const int kInfnoiseMultiplier = 1;
+static const int kInfnoiseMultiplier = 2;
 static const char* kInfnoiseSerial = NULL;
 
 ////////////////////////////////
@@ -138,14 +138,8 @@ static int Bytes(unsigned char* buf, int num) {
       uint8_t trng_buffer[BUFLEN];
       char* message = NULL;
       bool error_flag = false;
-      size_t trng_bytes;
-      if (kInfnoiseMultiplier > 1) {
-        trng_bytes = readData(&engine_state.ftdic, trng_buffer, &message,
-                              &error_flag, kInfnoiseMultiplier);
-      } else {
-        trng_bytes = readRawData(&engine_state.ftdic, trng_buffer, &message,
-                                 &error_flag);
-      }
+      size_t trng_bytes = readData(&engine_state.ftdic, trng_buffer, &message,
+				   &error_flag, kInfnoiseMultiplier);
       if (error_flag) {
         fprintf(stderr, "Infnoise error: %s\n", message ? message : "unknown");
         engine_state.status = kEngineFail;
