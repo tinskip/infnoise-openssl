@@ -1,4 +1,4 @@
- // Copyright 2018 Thomás Inskip. All rights reserved.
+// Copyright 2018 Thomás Inskip. All rights reserved.
 // https://github.com/tinskip/infnoise-openssl-engine
 //
 // Implementation of OpenSSL RAND engine which uses the infnoise TRNG to
@@ -6,7 +6,11 @@
 
 #include <libinfnoise.h>
 #include <openssl/engine.h>
+#include <openssl/dh.h>
+#include <openssl/dsa.H>
+#include <openssl/ec.h>
 #include <openssl/evp.h>
+#include <openssl/rsa.H>
 #include <stdio.h>
 #include <string.h>
 
@@ -175,6 +179,25 @@ int infnoise_bind(ENGINE* engine, const char* id) {
     return 0;
   }
 
+  // Deal with OpenSSL cruddiness.
+  DH_METHOD* dh_method = DH_get_default_method();
+  if (!dh_method || (ENGINE_set_DH(engine, dh_method))) {
+    fprintf(stderr, "infnoise could not get/set DH method %llx!\n", dh_method);
+  }
+  DSA_METHOD* dsa_method = DSA_get_default_method();
+  if (!dsa_method || (ENGINE_set_DSA(engine, dsa_method))) {
+    fprintf(stderr, "infnoise could not get/set DSA method!\n");
+  }
+  EC_KEY_METHOD* ec_key_method = EC_KEY_get_default_method();
+  if (!ec_key_method || (ENGINE_set_EC(engine, ec_key_method))) {
+    fprintf(stderr, "infnoise could not get/set EC_KEY method!\n");
+  }
+  RSA_METHOD* rsa_method = RSA_get_default_method();
+  if (!rsa_method || (ENGINE_set_RSA(engine, rsa_method))) {
+    fprintf(stderr, "infnoise could not get/set RSA method!\n");
+  }
+
+  
   return InfnoiseEngineStateInit(&engine_state);
 }
 
