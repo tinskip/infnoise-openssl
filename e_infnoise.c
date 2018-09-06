@@ -1,4 +1,4 @@
- // Copyright 2018 Thomás Inskip. All rights reserved.
+// Copyright 2018 Thomás Inskip. All rights reserved.
 // https://github.com/tinskip/infnoise-openssl-engine
 //
 // Implementation of OpenSSL RAND engine which uses the infnoise TRNG to
@@ -8,10 +8,11 @@
 #include <openssl/engine.h>
 #include <openssl/evp.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef MIN
-#  define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 static const int kEngineOk = 1;
@@ -21,8 +22,11 @@ static const int kEngineFail = 0;
 // Configuration
 ///////////////////
 
-static const int kInfnoiseMultiplier = 2;
-static const char* kInfnoiseSerial = NULL;
+static const int kInfnoiseMultiplier = 1;
+static const char *kInfnoiseSerial = NULL;
+static const bool kKeccak = true;
+static const bool kRaw = true;
+static const bool kDebug = true;
 
 ////////////////////////////////
 // Ring buffer implementation
@@ -32,18 +36,18 @@ static const char* kInfnoiseSerial = NULL;
 
 typedef struct {
   uint8_t buffer[kRingBufferSize];
-  uint8_t* r_ptr;
-  uint8_t* w_ptr;
+  uint8_t *r_ptr;
+  uint8_t *w_ptr;
 } RingBuffer;
 
-static void RingBufferInit(RingBuffer* buffer) {
+static void RingBufferInit(RingBuffer *buffer) {
   memset(buffer->buffer, 0, sizeof(buffer->buffer));
   buffer->r_ptr = buffer->buffer;
   buffer->w_ptr = buffer->buffer;
 }
 
-static size_t RingBufferRead(RingBuffer* buffer, size_t num_bytes,
-                             uint8_t* output) {
+static size_t RingBufferRead(RingBuffer *buffer, size_t num_bytes,
+                             uint8_t *output) {
   size_t total_bytes_read = 0;
 
   if (buffer->r_ptr > buffer->w_ptr) {
@@ -70,8 +74,8 @@ static size_t RingBufferRead(RingBuffer* buffer, size_t num_bytes,
   return total_bytes_read;
 }
 
-static size_t RingBufferWrite(RingBuffer* buffer, size_t num_bytes,
-                              const uint8_t* input) {
+static size_t RingBufferWrite(RingBuffer *buffer, size_t num_bytes,
+                              const uint8_t *input) {
   size_t total_bytes_written = 0;
 
   if (buffer->w_ptr > buffer->r_ptr) {
@@ -105,20 +109,21 @@ static size_t RingBufferWrite(RingBuffer* buffer, size_t num_bytes,
 ///////////////////////////
 
 typedef struct {
-  struct ftdi_context ftdic;
+  struct infnoise_context trng_context;
   RingBuffer ring_buffer;
   int status;
 } InfnoiseEngineState;
 
-static int InfnoiseEngineStateInit(InfnoiseEngineState* engine_state) {
-  memset(&engine_state->ftdic, 0, sizeof(engine_state->ftdic));
+static int InfnoiseEngineStateInit(InfnoiseEngineState *engine_state) {
+  memset(engine_state, 0, sizeof(*engine_state));
   RingBufferInit(&engine_state->ring_buffer);
-  char* message = NULL;
-  engine_state->status = initInfnoise(&engine_state->ftdic, kInfnoiseSerial,
-                                      &message, false, false);
-  if (engine_state->status != kEngineOk) {
-    fprintf(stderr, "initInfnoise Failure: %s\n",
-            message ? message : "unknown");
+  engine_state->status = initInfnoise(&engine_state->trng_context,
+                                      kInfnoiseSerial, kKeccak, !kDebug);
+  if (!engine_state->status) {
+    fprintf(stderr, "initInfnoise initialization error: %s\n",
+            engine_state->trng_context.message
+                ? engine_state->trng_context.message
+                : "unknown");
   }
 
   return engine_state->status;
@@ -126,8 +131,8 @@ static int InfnoiseEngineStateInit(InfnoiseEngineState* engine_state) {
 
 static InfnoiseEngineState engine_state;
 
-static int Bytes(unsigned char* buf, int num) {
-  unsigned char* w_ptr = buf;
+static int Bytes(unsigned char *buf, int num) {
+  unsigned char *w_ptr = buf;
   while ((num > 0) && (engine_state.status == kEngineOk)) {
     size_t bytes_read = RingBufferRead(&engine_state.ring_buffer, num, w_ptr);
     w_ptr += bytes_read;
@@ -135,19 +140,20 @@ static int Bytes(unsigned char* buf, int num) {
 
     if (num > 0) {
       // Need more TRNG bytes.
-      uint8_t trng_buffer[BUFLEN];
-      char* message = NULL;
-      bool error_flag = false;
-      size_t trng_bytes = readData(&engine_state.ftdic, trng_buffer, &message,
-				   &error_flag, kInfnoiseMultiplier);
-      if (error_flag) {
-        fprintf(stderr, "Infnoise error: %s\n", message ? message : "unknown");
+      uint8_t rand_buffer[BUFLEN];
+      size_t rand_bytes = readData(&engine_state.trng_context, rand_buffer,
+                                   !kRaw, kInfnoiseMultiplier);
+      if (engine_state.trng_context.errorFlag) {
+        fprintf(stderr, "Infnoise error: %s\n",
+                engine_state.trng_context.message
+                    ? engine_state.trng_context.message
+                    : "unknown");
         engine_state.status = kEngineFail;
         break;
       }
       size_t bytes_written =
-          RingBufferWrite(&engine_state.ring_buffer, trng_bytes, trng_buffer);
-      if (bytes_written != trng_bytes) {
+          RingBufferWrite(&engine_state.ring_buffer, rand_bytes, rand_buffer);
+      if (bytes_written != rand_bytes) {
         fprintf(stderr, "Invalid infnoise engine buffer state!\n");
         engine_state.status = kEngineFail;
         break;
@@ -160,7 +166,7 @@ static int Bytes(unsigned char* buf, int num) {
 
 static int Status(void) { return engine_state.status; }
 
-int infnoise_bind(ENGINE* engine, const char* id) {
+int infnoise_bind(ENGINE *engine, const char *id) {
   static const char kEngineId[] = "infnoise";
   static const char kEngineName[] = "RNG engine using the infnoise TRNG";
 
@@ -175,7 +181,12 @@ int infnoise_bind(ENGINE* engine, const char* id) {
     return 0;
   }
 
-  return InfnoiseEngineStateInit(&engine_state);
+  if (InfnoiseEngineStateInit(&engine_state) != kEngineOk) {
+    exit(-1);
+  }
+
+  fprintf(stderr, "Infnoise engine loaded.\n");
+  return kEngineOk;
 }
 
 IMPLEMENT_DYNAMIC_BIND_FN(infnoise_bind)
