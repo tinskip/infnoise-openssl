@@ -12,7 +12,7 @@ This is the library which does the actual magic.  You can obtain it from [https:
 ## Building and using infnoise-openssl
 Get a copy of this repository, cd into it, and just "make".  Then copy libinfnoise.(dylib|so) to the openssl engines library directory.
 
-Once installed, you need to tell OpenSSL to use the engine.  To this effect you have to specify an environment variable called **OPENSSL_CONF** which contains the path to the **openssl-infnoise.cnf** file (provided in this repo). You can either export this variable, or define it in the openssl command line.  Then try a command along the lines of "**openssl genrsa 4096**" You should see a message indicating that the infnoise engine was loaded, or an error. If you don't get either, retrace the steps above.
+Once installed, you need to tell OpenSSL to use the engine.  To this effect you have to specify an environment variable called **OPENSSL_CONF** which contains the path to the file **[openssl-infnoise.cnf](https://github.com/tinskip/infnoise-openssl/blob/master/infnoise-openssl.cnf "openssl-infnoise.cnf")**. You can either export this variable, or define it in the openssl command line.  Then try a command along the lines of "**openssl genrsa 4096**" You should see a message indicating that the infnoise engine was loaded, or an error. If you don't get either, retrace the steps above.
 
 **NOTE:** On some systems you may have to run openssl as root (sudo openssl...) to get this to work. There must be a way to set the FTDI USB permissions to not require root access, but so far everything I've tried has failed. If anyone knows how to do this, I'd appreciate if you let me know how.
 
