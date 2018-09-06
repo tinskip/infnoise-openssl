@@ -1,7 +1,7 @@
 # infnoise-openssl
-OpenSSL engine for random number generation using the [infnoise TRNG](https://github.com/13-37-org/infnoise "infnoise TRNG").
+OpenSSL engine for random number generation using the **[Infinite Noise TRNG](https://github.com/13-37-org/infnoise "infnoise TRNG").**
 
-This engine can be used generate true random data for any operations in OpenSSL which use random bits. This includes RSA and Eliptical Curve key generation, Diffie-Hellman key exchange, DSA and RSA-PSS signature salt generation, etc. It does not just seed the OpenSSL PRNG with data from the infnoise TRNG, but instead provides a steady true random bitstream for cryptographic operations.
+This engine can be used generate true random data for any operations in OpenSSL which use random bits. This includes RSA and Eliptical Curve key generation, Diffie-Hellman key exchange, DSA and RSA-PSS signature salt generation, etc. It does not just seed the OpenSSL PRNG with data from the Infinite Noise TRNG, but instead provides a steady true random bitstream for cryptographic operations.
 ## Prerequisites
 This engine has been tested on both Mac and Linux (Debian). Please feel free to add support for Windows.
 ### OpenSSL
@@ -16,4 +16,4 @@ Once installed, you need to tell OpenSSL to use the engine.  To this effect you 
 
 **NOTE:** On some systems you may have to run openssl as root (sudo openssl...) to get this to work. There must be a way to set the FTDI USB permissions to not require root access, but so far everything I've tried has failed. If anyone knows how to do this, I'd appreciate if you let me know how.
 
-Thanks to WaywardGeek for infnoise, as well as for his help with libinfnoise.
+Thanks to WaywardGeek for Noise, as well as for his help with libinfnoise.
