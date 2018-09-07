@@ -42,10 +42,9 @@ To run without root privileges, it's sufficient to add
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="infnoise", GROUP="dialout", MODE="0664"
  to `/etc/udev/rules.d/75-infnoise.rules` 
 
-Don't forget to reload udev afterwards (or reboot) - and add your user to the dialout group. This should be it.
+then reload udevd and add your user to the "dialout" group. For this to take effect, you'll need to re-login. If applicable, just reboot your machine after adding the line and assigning the group.
 
     $ sudo service udev reload
-    $ sudo adduser manuel dialout
+    $ śudo adduser manuel dialout
 
-
-Thanks to WaywardGeek for Noise, as well as Manuel Domke (from 13-37.org electronics) for his work on libinfnoise.
+Thanks to WaywardGeek for the hardware design, as well as Manuel Domke (from 13-37.org electronics) for his work on libinfnoise.
