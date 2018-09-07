@@ -9,6 +9,6 @@ engines = engine_section
 infnoise = infnoise_section
 
 [infnoise_section]
-engine_id = infnoise
+engine_id = infnoise-openssl
 default_algorithms = ALL
 init = 0

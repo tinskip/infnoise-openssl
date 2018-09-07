@@ -1,15 +1,16 @@
 CC = gcc
-CFLAGS = -fPIC -Wall -Wextra -O2
-LDFLAGS = -shared -lcrypto -linfnoise 
+CFLAGS = -fPIC -Wall -Wextra -O2 -L/usr/local/lib/
+LDFLAGS = -shared -lcrypto -linfnoise -L/usr/local/lib/
 RM = rm -f
 
-TARGET_NAME = infnoise
+TARGET_NAME = infnoise-openssl
 ifeq ($(OS),Windows_NT)
 	TARGET_LIB = $(TARGET_NAME).dll
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
 		TARGET_LIB = $(TARGET_NAME).so
+ 		CFLAGS += -I/usr/local/include/ -linfnoise
         else
 		ifeq ($(UNAME_S),Darwin)
 			TARGET_LIB =$(TARGET_NAME).dylib
@@ -27,7 +28,7 @@ OBJS = $(SRCS:.c=.o)
 all: ${TARGET_LIB}
 
 $(TARGET_LIB): $(OBJS)
-	$(CC) ${LDFLAGS} -o $@ $^
+	$(CC) -o $@ $^ ${LDFLAGS}
 
 $(SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) -MM $< >$@
@@ -37,4 +38,3 @@ include $(SRCS:.c=.d)
 .PHONY: clean
 clean:
 	-${RM} ${TARGET_LIB} ${OBJS} $(SRCS:.c=.d)
-
