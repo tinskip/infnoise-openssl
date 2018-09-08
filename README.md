@@ -34,10 +34,7 @@ Once installed, you need to tell OpenSSL to use the engine.  To this effect you 
     # Test randomness provided by the TRNG
     $ openssl rand 10000000 | ent
 
-**NOTE:** On some systems you may have to run openssl as root (sudo openssl...) to get this to work. There must be a way to set the FTDI USB permissions to not require root access, but so far everything I've tried has failed. If anyone knows how to do this, I'd appreciate if you let me know how.
-
-**Answer:**
-To run without root privileges, it's sufficient to add 
+**NOTE:** On some systems you may have to run openssl as root (sudo openssl...) to get this to work. To run without root privileges, add the following:
 
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", SYMLINK+="infnoise", GROUP="dialout", MODE="0664"
  to `/etc/udev/rules.d/75-infnoise.rules` 
