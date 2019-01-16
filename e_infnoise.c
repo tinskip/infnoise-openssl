@@ -25,7 +25,7 @@ static const int kEngineFail = 0;
 static const int kInfnoiseMultiplier = 1;
 static const char *kInfnoiseSerial = NULL;
 static const bool kKeccak = true;
-static const bool kDebug = true;
+static const bool kDebug = false;
 
 ////////////////////////////////
 // Ring buffer implementation
@@ -117,7 +117,7 @@ static int InfnoiseEngineStateInit(InfnoiseEngineState *engine_state) {
   memset(engine_state, 0, sizeof(*engine_state));
   RingBufferInit(&engine_state->ring_buffer);
   engine_state->status = initInfnoise(&engine_state->trng_context,
-                                      kInfnoiseSerial, kKeccak, !kDebug);
+                                      kInfnoiseSerial, kKeccak, kDebug);
   if (!engine_state->status) {
     fprintf(stderr, "initInfnoise initialization error: %s\n",
             engine_state->trng_context.message
@@ -141,7 +141,7 @@ static int Bytes(unsigned char *buf, int num) {
       // Need more TRNG bytes.
       uint8_t rand_buffer[BUFLEN];
       size_t rand_bytes = readData(&engine_state.trng_context, rand_buffer,
-                                   kKeccak, kInfnoiseMultiplier);
+                                   !kKeccak, kInfnoiseMultiplier);
       if (engine_state.trng_context.errorFlag) {
         fprintf(stderr, "Infnoise error: %s\n",
                 engine_state.trng_context.message
