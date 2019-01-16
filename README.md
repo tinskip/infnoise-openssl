@@ -15,7 +15,7 @@ This engine requires, of course, engine support from OpenSSL.  You can tell whet
 ### libinfnoise
 This is the library which does the actual magic.  You can obtain it from [https://github.com/13-37-org/infnoise](https://github.com/13-37-org/infnoise "https://github.com/13-37-org/infnoise"). Build and install both the "install" and "install-lib" targets.
 
-    $ git clone https://github.com/13-37-org/infnoise && cd software
+    $ git clone https://github.com/13-37-org/infnoise && cd infnoise/software
     $ make -f Makefile.linux install-lib
 
 ## Building and using infnoise-openssl
