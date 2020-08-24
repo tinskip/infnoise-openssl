@@ -35,70 +35,92 @@ static const bool kDebug = false;
 
 typedef struct {
   uint8_t buffer[kRingBufferSize];
-  uint8_t *r_ptr;
-  uint8_t *w_ptr;
+  size_t r_idx;
+  size_t w_idx;
+  size_t bytes_in_buffer;
 } RingBuffer;
 
-static void RingBufferInit(RingBuffer *buffer) {
-  memset(buffer->buffer, 0, sizeof(buffer->buffer));
-  buffer->r_ptr = buffer->buffer;
-  buffer->w_ptr = buffer->buffer;
+static void RingBufferInit(RingBuffer* buffer) {
+  memset(buffer, 0, sizeof(*buffer));
 }
 
-static size_t RingBufferRead(RingBuffer *buffer, size_t num_bytes,
-                             uint8_t *output) {
+static size_t RingBufferBytesAvailable(const RingBuffer* buffer) {
+  return buffer->bytes_in_buffer;
+}
+
+static size_t RingBufferBytesFree(const RingBuffer* buffer) {
+  return sizeof(buffer->buffer) - buffer->bytes_in_buffer;
+}
+
+static size_t RingBufferRead(RingBuffer* buffer, size_t num_bytes,
+                             uint8_t* output) {
+  if (buffer->bytes_in_buffer == 0) {
+    return 0;
+  }
+
   size_t total_bytes_read = 0;
 
-  if (buffer->r_ptr > buffer->w_ptr) {
-    size_t bytes_in_front = kRingBufferSize - (buffer->r_ptr - buffer->buffer);
+  if (buffer->r_idx >= buffer->w_idx) {
+    size_t bytes_in_front = sizeof(buffer->buffer) - buffer->r_idx;
     size_t bytes_read = MIN(num_bytes, bytes_in_front);
-    memcpy(output, buffer->r_ptr, bytes_read);
-    if (bytes_read < bytes_in_front) {
-      buffer->r_ptr += bytes_read;
-      return bytes_read;
+    memcpy(output, buffer->buffer + buffer->r_idx, bytes_read);
+    buffer->r_idx += bytes_read;
+    if (buffer->r_idx == sizeof(buffer->buffer)) {
+      buffer->r_idx = 0;
     }
-    buffer->r_ptr = buffer->buffer;
+    buffer->bytes_in_buffer -= bytes_read;
     total_bytes_read += bytes_read;
     num_bytes -= bytes_read;
   }
 
-  size_t bytes_read = MIN(num_bytes, (size_t)(buffer->w_ptr - buffer->r_ptr));
-  memcpy(output, buffer->r_ptr, bytes_read);
-  buffer->r_ptr += bytes_read;
-  if ((buffer->r_ptr - buffer->buffer) == sizeof(buffer->buffer)) {
-    buffer->r_ptr = buffer->buffer;
+  if (num_bytes > 0) {
+    size_t bytes_read = MIN(num_bytes, buffer->bytes_in_buffer);
+    memcpy(output + total_bytes_read, buffer->buffer + buffer->r_idx,
+           bytes_read);
+    buffer->r_idx += bytes_read;
+    if (buffer->r_idx == sizeof(buffer->buffer)) {
+      buffer->r_idx = 0;
+    }
+    buffer->bytes_in_buffer -= bytes_read;
+    total_bytes_read += bytes_read;
   }
-  total_bytes_read += bytes_read;
 
   return total_bytes_read;
 }
 
-static size_t RingBufferWrite(RingBuffer *buffer, size_t num_bytes,
-                              const uint8_t *input) {
+static size_t RingBufferWrite(RingBuffer* buffer, size_t num_bytes,
+                              const uint8_t* input) {
+  if (sizeof(buffer->buffer) - buffer->bytes_in_buffer == 0) {
+    return 0;
+  }
+
   size_t total_bytes_written = 0;
 
-  if (buffer->w_ptr > buffer->r_ptr) {
-    size_t free_bytes_in_front =
-        kRingBufferSize - (buffer->w_ptr - buffer->buffer);
+  if (buffer->w_idx >= buffer->r_idx) {
+    size_t free_bytes_in_front = sizeof(buffer->buffer) - buffer->w_idx;
     size_t bytes_write = MIN(num_bytes, free_bytes_in_front);
-    memcpy(buffer->w_ptr, input, bytes_write);
-    if (bytes_write < num_bytes) {
-      buffer->w_ptr += bytes_write;
-      return bytes_write;
+    memcpy(buffer->buffer + buffer->w_idx, input, bytes_write);
+    buffer->w_idx += bytes_write;
+    if (buffer->w_idx == sizeof(buffer->buffer)) {
+      buffer->w_idx = 0;
     }
-    buffer->w_ptr = buffer->buffer;
+    buffer->bytes_in_buffer += bytes_write;
     total_bytes_written += bytes_write;
     num_bytes -= bytes_write;
   }
 
-  size_t bytes_write =
-      MIN(num_bytes, kRingBufferSize - (buffer->w_ptr - buffer->r_ptr));
-  memcpy(buffer->w_ptr, input, bytes_write);
-  buffer->w_ptr += bytes_write;
-  if ((buffer->w_ptr - buffer->buffer) == sizeof(buffer->buffer)) {
-    buffer->w_ptr = buffer->buffer;
+  if (num_bytes > 0) {
+    size_t bytes_write =
+        MIN(num_bytes, sizeof(buffer->buffer) - buffer->bytes_in_buffer);
+    memcpy(buffer->buffer + buffer->w_idx, input + total_bytes_written,
+           bytes_write);
+    buffer->w_idx += bytes_write;
+    if (buffer->w_idx == sizeof(buffer->buffer)) {
+      buffer->w_idx = 0;
+    }
+    buffer->bytes_in_buffer += bytes_write;
+    total_bytes_written += bytes_write;
   }
-  total_bytes_written += bytes_write;
 
   return total_bytes_written;
 }
