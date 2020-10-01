@@ -48,10 +48,6 @@ static size_t RingBufferBytesAvailable(const RingBuffer* buffer) {
   return buffer->bytes_in_buffer;
 }
 
-static size_t RingBufferBytesFree(const RingBuffer* buffer) {
-  return sizeof(buffer->buffer) - buffer->bytes_in_buffer;
-}
-
 static size_t RingBufferRead(RingBuffer* buffer, size_t num_bytes,
                              uint8_t* output) {
   if (buffer->bytes_in_buffer == 0) {

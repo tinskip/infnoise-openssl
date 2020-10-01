@@ -12,14 +12,21 @@ This engine requires, of course, engine support from OpenSSL.  You can tell whet
     $ git clone https://github.com/openssl/openssl && cd openssl
     $ ./config && make && sudo make install
 
+### libftdi
+On debian-based linux:
+    $ sudo apt-get install libftdi
+    
+On Mac OS X:
+    $ brew install libftdi
+
 ### libinfnoise
 This is the library which does the actual magic.  You can obtain it from [https://github.com/13-37-org/infnoise](https://github.com/13-37-org/infnoise "https://github.com/13-37-org/infnoise"). Build and install both the "install" and "install-lib" targets.
 
     $ git clone https://github.com/13-37-org/infnoise && cd infnoise/software
-    $ make -f Makefile.linux install-lib
+    $ make -f Makefile.<platform> install-lib
 
 ## Building and using infnoise-openssl
-Get a copy of this repository, cd into it, and just "make".  Then copy infnoise.(dylib|so) to the openssl engines library directory.
+Get a copy of this repository, cd into it, and just "make".  Then copy [lib]infnoise-openssl.[dylib|.so] to the openssl engines directory.
 
 Once installed, you need to tell OpenSSL to use the engine.  To this effect you have to specify an environment variable called **OPENSSL_CONF** which contains the path to the file **[infnoise-openssl.cnf](https://github.com/tinskip/infnoise-openssl/blob/master/infnoise-openssl.cnf "infnoise-openssl.cnf")**. You can either export this variable, or define it in the openssl command line.  Then try a command along the lines of "**openssl genrsa 4096**" You should see a message indicating that the infnoise engine was loaded, or an error. If you don't get either, retrace the steps above.
 
